@@ -2,13 +2,16 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-$files = glob('map/*'); //search all files
+//unlimited timeout
+ini_set('max_execution_time', 0);
+
+$files = glob('maps/*'); //search all files
 $js_files = preg_grep('/\.(js)$/i', $files); //filter only javascript
 
 $arr = array(); //list of filename
 foreach ($js_files as $idx => $jsf) {
-    $dest = str_replace('map/', 'data/', $jsf);
-    extractdata($_SERVER['DOCUMENT_ROOT'] . '/tes/' . $jsf, $dest);
+    $dest = str_replace('maps/', 'data/', $jsf);
+    extractdata($_SERVER['DOCUMENT_ROOT'] . '/dataextract/' . $jsf, $dest);
     $arr[] = $dest;
 }
 
@@ -49,13 +52,24 @@ function extractdata($src_filepath, $des_filepath) {
         <script type="text/javascript" src="jquery-3.3.1.min.js"></script>
         <script type="text/javascript">
             $(document).ready(function () {
-                //looping list of filenames then POST
-                var arr = [<?php echo "'" . implode('\', \'', $arr) . "'" ?>];
-                $.each(arr, function (idx, val) {
-                    $.getScript(val, function () {
+                var arr = [<?php echo "'" . implode('\', \'', $arr) . "'" ?>];//array all maps filename
+
+                //use interval to avoid net::ERR_INSUFFICIENT_RESOURCES error
+                var idx = 0;
+                var myinterval = setInterval(function () {
+                    //clear timeout
+                    if (idx === arr.length) {
+                        clearInterval(myinterval);
+                        return false;
+                    }
+
+                    //get js and post data
+                    $.getScript(arr[idx], function () {
                         send_data(geodefinitions);
+                        idx++;
                     });
-                });
+                }, 1500);
+
             });
 
             /*
